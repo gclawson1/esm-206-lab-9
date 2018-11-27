@@ -108,12 +108,13 @@ Use summary() to view the model output and statistics.
 ```{r saturated}
 
 # a. Saturated model: 
-saturated <- lm(SqFt ~ Price + Bedrooms + Bathrooms + PricePerSqFt + Status, data = homes_sub)
-summary(saturated)
+homes_lml <- lm(Price ~ City + Bedrooms + Bathrooms + SqFt + PricePerSqFt + Status, data = homes_sub)
+
+
+# Note: THIS IS BAD (because PricePerSqFt is calculated from the dependent variable Price --- biased overfitting of model results)
 
 # b. Model summary:
-mod_sum <- lm(SqFt ~ Price + Status, data = homes_sub)
-summary(mod_sum)
+summary(homes_lml)
 ```
 
 The next model: Exclude price per square foot, and bedrooms/bathrooms (since these are largely explained by square footage...)
@@ -121,29 +122,32 @@ The next model: Exclude price per square foot, and bedrooms/bathrooms (since the
 ```{r subset}
 
 # a. Updated model with variables City, SqFt, and Status:
+homes_lm2 <- lm(Price ~ SqFt + Status + City, data = homes_sub)
 
 # b. Model summary:
-
+summary(homes_lm2)
 ```
 
 Wait...but what if I wanted everything to be with respect to a Regular sale status? Then I need to change my factor levels. We've done this before, here we'll use a different function (fct_relevel) from *forcats* package in the tidyverse. 
 
 ```{r fct_relevel}
-
+library(forcats)
 # a. Set Status to class 'factor'
-
+homes_sub$Status <- as.factor(homes_sub$Status)
 
 # b. Check to ensure it's a factor now
-
+is.factor(homes_sub$Status)
 
 # c. Check levels:
-
+levels(homes_sub$Status)
 
 # d. Reassign reference level of "Status" to "Regular":
-
+homes_sub$Status <- fct_relevel(homes_sub$Status, "Regular")
+levels(homes_sub$Status)
 
 # e. Now run the regression again - same equation, but now the reference level is different (Status = Regular): 
-
+homes_lm3 <- lm(Price ~ SqFt + Status + City, data = homes_sub)
+summary(homes_lm3)
 
 
 ```
@@ -160,7 +164,9 @@ Then we can evaluate model diagnostics using the plot() function:
 ```{r diagnostics}
 
 # a. Model diagnostics:
+plot(homes_lm3)
 
+# overall, heteroscedasticity is ok, residuals normality definitely looks good, and conceptually and mathematically my model is making sense!
 ```
 
 ###6. Model comparison by Akaike Information Criterion
@@ -170,9 +176,12 @@ The AIC is a quantitative metric for model "optimization" that balances complexi
 ```{r AIC}
 
 # a. AIC values for each model
-
+sat_aic <- AIC(homes_lml)
+sat_aic
+final_aic <- AIC(homes_lm3)
+final_aic
 # Answer: which would you pick? 
-
+# With AIC you pick lml, but conceptually should pick lm3, because: overall, heteroscedasticity is ok, residuals normality definitely looks good, and conceptually and mathematically my model is making sense!
 ```
 
 ###7. Regression tables with *stargazer*
@@ -180,7 +189,7 @@ The AIC is a quantitative metric for model "optimization" that balances complexi
 ```{r stargazer, results = 'asis'}
 
 # a. Prepare a nice regression table:
-
+lm_table <- stargazer(homes_lml, homes_lm3, type = "html")
 
 
 # Note: If you want to work with this in Word, save to html, open, copy and paste into Word. 
@@ -232,9 +241,10 @@ Make predictions for the new data using predict():
 ```{r predict}
 
 # a. Make predictions using the new data frame:
+price_predict <- as.data.frame(predict(homes_lm3, newdata = df_new, se.fit = TRUE, interval = "confidence"))
 
 # b. Bind predictions to the data to make it actually useful:
-
+predict_df <- data.frame(df_new, price_predict)
 
 
 ```
@@ -245,6 +255,10 @@ Then visualize it!
 
 # Create a line graph with square footage on the x-axis, predicted price on y-axis, with color dependent on City and facet_wrapped by sale status (follow along):
 
+predict_graph <- ggplot(predict_df, aes(x = SqFt, y = fit.fit)) +
+  geom_line(aes(color = City)) +
+  facet_wrap(~Status)
+predict_graph
 
 ```
 
