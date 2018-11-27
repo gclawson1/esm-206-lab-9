@@ -30,7 +30,8 @@ Use this template to follow along in Lab Week 9. Each code chunk you'll need is 
 ```{r packages, include = FALSE}
 
 # a. Load packages 'tidyverse' and 'stargazer':
-
+library(tidyverse)
+library(stargazer)
 
 
 ```
@@ -41,10 +42,11 @@ Use this template to follow along in Lab Week 9. Each code chunk you'll need is 
 
 # a. Read in data as 'homes':
 
+homes <- read_csv("slo_homes.csv")
 
 # b. Filter to only include cities "San Luis Obispo", "Santa Maria-Orcutt", "Atascadero", and "Arroyo Grande", and call this new subset 'homes_sub':
 
-
+homes_sub <- filter(homes, City %in% c("San Luis Obispo", "Santa Maria-Orcutt", "Atascadero", "Arroyo Grande"))
 
 ```
 
@@ -106,10 +108,12 @@ Use summary() to view the model output and statistics.
 ```{r saturated}
 
 # a. Saturated model: 
-
+saturated <- lm(SqFt ~ Price + Bedrooms + Bathrooms + PricePerSqFt + Status, data = homes_sub)
+summary(saturated)
 
 # b. Model summary:
-
+mod_sum <- lm(SqFt ~ Price + Status, data = homes_sub)
+summary(mod_sum)
 ```
 
 The next model: Exclude price per square foot, and bedrooms/bathrooms (since these are largely explained by square footage...)
